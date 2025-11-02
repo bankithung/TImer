@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Timer</title>
+    <style>
+        body {
+            background: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #display {
+            position: relative;
+            width: 800px;
+            height: 160px;
+            margin-bottom: 30px;
+        }
+
+        .digit {
+            position: relative;
+            width: 100px;
+            height: 140px;
+            float: left;
+            margin: 0 4px;
+        }
+
+        .segment {
+            position: absolute;
+            background: #000;
+            border-radius: 6px;
+        }
+
+        .on {
+            background: #ff0000;
+            box-shadow: 0 0 20px #ff0000;
+        }
+
+        /* Horizontal segments */
+        .a, .d, .g {
+            width: 80px;
+            height: 16px;
+            left: 10px;
+        }
+
+        .a { top: 0; }
+        .g { top: 62px; }
+        .d { bottom: 0; }
+
+        /* Vertical segments */
+        .b, .c, .e, .f {
+            width: 16px;
+            height: 60px;
+        }
+
+        .f { left: 0; top: 16px; }
+        .b { right: 0; top: 16px; }
+        .e { left: 0; bottom: 16px; }
+        .c { right: 0; bottom: 16px; }
+
+        .colon {
+            position: relative;
+            width: 30px;
+            height: 140px;
+            float: left;
+            margin: 0 10px;
+        }
+
+        .dot {
+            position: absolute;
+            left: 10px;
+            width: 8px;
+            height: 8px;
+            background: #ff0000;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #ff0000;
+        }
+
+        .dot.top { top: 36px; }
+        .dot.bottom { top: 84px; }
+
+        #controls {
+            display: flex;
+            gap: 15px;
+        }
+
+        button {
+            background: #333;
+            color: #fff;
+            border: 1px solid #555;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #555;
+        }
+
+        button:active {
+            background: #777;
+        }
+    </style>
+</head>
+<body>
+    <div id="display">
+        <div class="digit" id="d0">
+            <div class="segment a"></div>
+            <div class="segment b"></div>
+            <div class="segment c"></div>
+            <div class="segment d"></div>
+            <div class="segment e"></div>
+            <div class="segment f"></div>
+            <div class="segment g"></div>
+        </div>
+        <div class="digit" id="d1">
+            <div class="segment a"></div>
+            <div class="segment b"></div>
+            <div class="segment c"></div>
+            <div class="segment d"></div>
+            <div class="segment e"></div>
+            <div class="segment f"></div>
+            <div class="segment g"></div>
+        </div>
+        <div class="colon">
+            <div class="dot top"></div>
+            <div class="dot bottom"></div>
+        </div>
+        <div class="digit" id="d2">
+            <div class="segment a"></div>
+            <div class="segment b"></div>
+            <div class="segment c"></div>
+            <div class="segment d"></div>
+            <div class="segment e"></div>
+            <div class="segment f"></div>
+            <div class="segment g"></div>
+        </div>
+        <div class="digit" id="d3">
+            <div class="segment a"></div>
+            <div class="segment b"></div>
+            <div class="segment c"></div>
+            <div class="segment d"></div>
+            <div class="segment e"></div>
+            <div class="segment f"></div>
+            <div class="segment g"></div>
+        </div>
+        <div class="colon">
+            <div class="dot top"></div>
+            <div class="dot bottom"></div>
+        </div>
+        <div class="digit" id="d4">
+            <div class="segment a"></div>
+            <div class="segment b"></div>
+            <div class="segment c"></div>
+            <div class="segment d"></div>
+            <div class="segment e"></div>
+            <div class="segment f"></div>
+            <div class="segment g"></div>
+        </div>
+        <div class="digit" id="d5">
+            <div class="segment a"></div>
+            <div class="segment b"></div>
+            <div class="segment c"></div>
+            <div class="segment d"></div>
+            <div class="segment e"></div>
+            <div class="segment f"></div>
+            <div class="segment g"></div>
+        </div>
+    </div>
+    <div id="controls">
+        <button id="start">Start</button>
+        <button id="stop">Stop</button>
+        <button id="restart">Restart</button>
+    </div>
+
+    <script>
+        let timer = null;
+        let running = false;
+        let time = { h: 0, m: 0, s: 0 };
+
+        const patterns = {
+            0: ['a', 'b', 'c', 'd', 'e', 'f'],
+            1: ['b', 'c'],
+            2: ['a', 'b', 'd', 'e', 'g'],
+            3: ['a', 'b', 'c', 'd', 'g'],
+            4: ['b', 'c', 'f', 'g'],
+            5: ['a', 'c', 'd', 'f', 'g'],
+            6: ['a', 'c', 'd', 'e', 'f', 'g'],
+            7: ['a', 'b', 'c'],
+            8: ['a', 'b', 'c', 'd', 'e', 'f', 'g'],
+            9: ['a', 'b', 'c', 'd', 'f', 'g']
+        };
+
+        function setDigit(id, num) {
+            const digit = document.getElementById(id);
+            const segments = digit.querySelectorAll('.segment');
+            segments.forEach(seg => seg.classList.remove('on'));
+
+            if (patterns[num]) {
+                patterns[num].forEach(cls => {
+                    const seg = digit.querySelector(`.${cls}`);
+                    if (seg) seg.classList.add('on');
+                });
+            }
+        }
+
+        function updateDisplay() {
+            const hh = Math.floor(time.h).toString().padStart(2, '0');
+            const mm = time.m.toString().padStart(2, '0');
+            const ss = time.s.toString().padStart(2, '0');
+
+            setDigit('d0', parseInt(hh.charAt(0) || '0'));
+            setDigit('d1', parseInt(hh.charAt(1) || '0'));
+            setDigit('d2', parseInt(mm.charAt(0)));
+            setDigit('d3', parseInt(mm.charAt(1)));
+            setDigit('d4', parseInt(ss.charAt(0)));
+            setDigit('d5', parseInt(ss.charAt(1)));
+        }
+
+        function tick() {
+            time.s++;
+            if (time.s >= 60) {
+                time.s = 0;
+                time.m++;
+            }
+            if (time.m >= 60) {
+                time.m = 0;
+                time.h++;
+            }
+            updateDisplay();
+        }
+
+        function startTimer() {
+            if (!running) {
+                running = true;
+                timer = setInterval(tick, 1000);
+            }
+        }
+
+        function stopTimer() {
+            if (running) {
+                running = false;
+                clearInterval(timer);
+                timer = null;
+            }
+        }
+
+        function restartTimer() {
+            stopTimer();
+            time = { h: 0, m: 0, s: 0 };
+            updateDisplay();
+        }
+
+        document.getElementById('start').addEventListener('click', startTimer);
+        document.getElementById('stop').addEventListener('click', stopTimer);
+        document.getElementById('restart').addEventListener('click', restartTimer);
+
+        // Initial display
+        updateDisplay();
+    </script>
+</body>
+</html>
